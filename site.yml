@@ -1,0 +1,34 @@
+---
+
+- host: all
+  become: true
+  task:
+
+    - name: install update
+      tags: always
+      dnf:
+        name: '*'
+        state: latest
+
+    - name: Install NTP
+      dnf:
+      name: chrony
+      state: present
+
+    - name: Ensure chronyd is running and enabled at host
+      systemd:
+      name: chronyd
+      state: started
+      enabled: yes
+
+    - name: install XRDP and tigervnc-server
+      dnf: 
+        - xrdp
+        - tigervnc-server
+      state: present
+
+    - name: start and enable xrdp-sesman service
+      systemd:
+        name: xrdp-sesman
+        state: started
+        enabled: yes

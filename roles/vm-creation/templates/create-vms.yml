@@ -1,0 +1,8 @@
+---
+- name: VM creation Playbook
+  hosts: server1  # Adjust this to the name or IP of your server in the inventory
+  become: yes
+  roles: 
+    - vm-img
+    - vm-iso
+    - vm-creation

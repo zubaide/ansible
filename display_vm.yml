@@ -1,0 +1,14 @@
+---
+
+- name: Display VMs created
+  hosts: server1:server2
+  become: yes
+  tasks: 
+    - name: list all VMs
+      command: virsh list --all
+      register: vm_list
+      changed_when: false
+
+    - name: display VM list
+      debug:
+        var: vm_list.stdout_lines

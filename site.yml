@@ -1,8 +1,14 @@
 ---
 
-- host: all
+- hosts: all
   become: true
-  task:
+  pre_tasks: 
+
+    - name: update DNF cache
+      tags: always
+      dnf:
+        update_cache: yes
+      changed_when: false
 
     - name: install update
       tags: always
@@ -10,25 +16,26 @@
         name: '*'
         state: latest
 
-    - name: Install NTP
-      dnf:
-      name: chrony
-      state: present
+- name: Install and configure KVM with Bridge on server1 & server2
+  hosts: server1:server2
+  become: true
+  tasks:
 
-    - name: Ensure chronyd is running and enabled at host
-      systemd:
-      name: chronyd
-      state: started
-      enabled: yes
-
-    - name: install XRDP and tigervnc-server
+    - name: install KVM and related package
+      tags: kvm,libvirtd,qemu
       dnf: 
-        - xrdp
-        - tigervnc-server
-      state: present
+        name:
+          - qemu-kvm
+          - libvirt
+          - virt-install
+          - bridge-utils
+          - virt-manager
+        state: present
 
-    - name: start and enable xrdp-sesman service
+    - name: Enable and start libvirtd service
+      tags: kvm,libvirtd,qemu
       systemd:
-        name: xrdp-sesman
+        name: libvirtd
         state: started
-        enabled: yes
+        enabled: yes 
+

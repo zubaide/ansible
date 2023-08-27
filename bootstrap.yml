@@ -1,0 +1,141 @@
+---
+
+- hosts: all
+  become: true
+  pre_tasks: 
+
+    - name: Gather facts
+      setup:
+
+    - name: Print system information
+      debug:
+        msg:
+          - "Total Disk Space on /: {{ (ansible_mounts | selectattr('mount', 'equalto', '/') | first).size_total / 1024 / 1024 / 1024 | round(2) }} GB"
+          - "Free Disk Space on /: {{ (ansible_mounts | selectattr('mount', 'equalto', '/') | first).size_available / 1024 / 1024 / 1024 | round(2) }} GB"
+          - "CPU Type: {{ ansible_processor[1] }}"
+          - "Number of vCPUs: {{ ansible_processor_vcpus }}"
+          - "Total Memory: {{ ansible_memory_mb.real.total }} MB"
+          - "Free Memory: {{ ansible_memory_mb.real.free }} MB"
+  tasks:
+
+    - name: install update
+      tags: always
+      dnf:
+        name: '*'
+        state: latest
+
+    - name: create itadmin user
+      tags: always
+      user:
+        name: itadmin
+        group: root
+
+    - name: add ssh key for itadmin
+      tags: always
+      authorized_key:
+        user: itadmin
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKirPfe6hRSs5337eyTY/XIcqh6FlDNhC3LaG3pCH8cQ ansible"
+
+    - name: add sudoers file for itadmin
+      tags: always
+      copy:
+        src: sudoer_itadmin
+        dest: /etc/sudoers.d/itadmin
+        owner: root
+        group: root
+
+    - name: Install EPEL repository
+      tags: epel-repo
+      dnf: 
+        name: epel-release
+        state: present
+
+    - name: Install NTP
+      tags: ntp,chrony
+      dnf:
+        name: chrony
+        state: present
+
+    - name: Configure NTP to sync to Asia NTP pool
+      tags: ntp,chrony
+      lineinfile:
+        path: /etc/chrony.conf
+        regexp: '^server'
+        line: 'server 0.asia.pool.ntp.org iburst'
+        state: present
+
+    - name: Ensure chronyd is running and enabled at host
+      tags: ntp,chrony
+      systemd:
+        name: chronyd
+        state: started
+        enabled: yes
+
+    - name: set timezone to Asia/Kuala_Lumpur
+      tags: ntp,chrony
+      ansible.builtin.timezone:
+        name: Asia/Kuala_Lumpur
+
+    - name: Print Chrony synchronization status
+      tags: ntp,chrony
+      command: chronyc tracking
+      register: result
+      changed_when: false
+
+    - name: print the result
+      tags: ntp,chrony
+      debug:
+        msg: "{{ result.stdout_lines }}"
+
+    - name: Verify the systemtime is syncronized
+      tags: ntp,chrony
+      assert:
+        that:
+          - "result.stdout | regex_search('System time.*seconds (slow|fast) of NTP time') | regex_replace('System time.*: (.*) seconds (slow|fast) of NTP time', '\\1') | float <= 0.001"
+        fail_msg: "System time is not synchronized within the allowed threshold."
+
+    - name: Get current server time
+      tags: ntp,chrony
+      command: date
+      register: current_time
+      changed_when: false
+
+    - name: Print current server time
+      tags: ntp,chrony
+      debug:
+        msg: "The current time on {{ inventory_hostname }} is {{ current_time.stdout }}"
+
+
+    - name: install XRDP and tigervnc-server
+      tags: xrdp,tigervnc
+      dnf:
+        name:  
+          - xrdp
+          - tigervnc-server
+        state: present
+
+    - name: start and enable xrdp service
+      tags: xrdp,tigervnc
+      systemd: 
+        name: xrdp
+        state: started
+        enabled: yes
+
+    - name: start and enable xrdp-sesman service
+      tags: xrdp,tigervnc
+      systemd:
+        name: xrdp-sesman
+        state: started
+        enabled: yes
+
+    - name: Open port 3389/tcp for XRDP
+      tags: xrdp,tigervnc,firewalld
+      firewalld: 
+        port: 3389/tcp
+        permanent: yes
+        state: enabled
+
+    - name: reload_firewalld
+      tags: xrdp,tigervnc,firewalld
+      command: firewall-cmd --reload
+      changed_when: false

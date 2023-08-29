@@ -1,10 +1,13 @@
 # VM img & iso
-disk_path: /media/img/vm1.qcow2  # Add the VM image name
+#disk_path: /media/img/vm3.qcow2  # Add the VM image name
+#iso_path: /media/iso/ubuntu-22.04.3-desktop-amd64.iso  # Add the ISO name
+#iso_url: https://ubuntu.com/download/desktop/thank-you?version=22.04.3&architecture=amd64
+disk_path: /media/img/vm3.qcow2
 iso_path: /media/iso/CentOS-Stream-9-latest-x86_64-dvd1.iso  # Add the ISO name
 iso_url: https://mirrors.centos.org/mirrorlist?path=/9-stream/BaseOS/x86_64/iso/CentOS-Stream-9-latest-x86_64-dvd1.iso&redirect=1&protocol=https
-
+  
 # VM details
-vm_name: VM1
+vm_name: VM3
 memory: 2048  # RAM in MB
 vcpus: 2  # Number of virtual CPUs
 network: br0

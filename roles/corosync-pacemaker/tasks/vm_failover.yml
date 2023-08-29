@@ -1,0 +1,6 @@
+---
+
+- name: Create VM resources
+  shell: pcs resource create {{ item.name }} ocf:heartbeat:VirtualDomain params config={{ item.config_path }} hypervisor="qemu:///system" op start timeout=60s op stop timeout=300s op monitor interval=30s
+  with_items: 
+    - { name: VM1, config_path: 

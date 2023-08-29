@@ -1,0 +1,50 @@
+---
+
+- name: Install necessary package
+  dnf:
+    name: 
+      - pacemaker
+      - corosync
+      - pcs
+      - fence-agents-all
+    state: present
+  become: yes    
+
+- name: start and enable pcsd service
+  service:
+    name: pcsd
+    state: started
+    enabled: yes
+  become: yes
+
+- name: Setup authentication for pcsd
+  shell: 
+    cnd: echo {{ pcsd_password }} | pcs host auth 192.168.88.125 192.168.88.126 -u hacluster
+    warn: false
+  become: yes
+  vars: 
+    pcsd_password: ntserverp
+
+- name: Copy Corosync configuration
+  copy:
+    src: corosync.conf
+    dest: /etc/corosync/corosync.conf
+  become: yes
+
+- name: Start and Enable Corosync and Pacemaker
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - corosync
+    - pacemaker
+  become: yes
+
+- name: Setup cluster on host servers
+  shell: pcs cluster setup --name cluster1 192.168.88.125 192.168.88.126
+  become: yes
+
+- name: Start cluster
+  shell: pcs cluster start --all
+  become: yes

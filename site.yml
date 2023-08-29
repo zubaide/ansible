@@ -30,6 +30,7 @@
           - virt-install
           - bridge-utils
           - virt-manager
+          - virt-viewer
         state: present
 
     - name: Enable and start libvirtd service

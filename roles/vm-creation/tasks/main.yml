@@ -22,6 +22,6 @@
   command: >
     virt-install --name {{ vm_name }} --ram {{ memory }} --vcpus {{ vcpus }}
     --disk path={{ disk_path }} --cdrom {{ iso_path }}
-    --network bridge={{ network }} --graphics none
+    --network bridge={{ network }} --graphics vnc,listen=0.0.0.0
     --os-variant generic --noautoconsole
   when: vm_exists.rc != 0 and disk_association_specific.rc != 0 and disk_association_general.rc != 0

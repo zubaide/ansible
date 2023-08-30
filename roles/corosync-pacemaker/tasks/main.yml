@@ -18,9 +18,8 @@
   become: yes
 
 - name: Setup authentication for pcsd
-  shell: 
-    cnd: echo {{ pcsd_password }} | pcs host auth 192.168.88.125 192.168.88.126 -u hacluster
-    warn: false
+  command:  
+    cmd: "echo {{ pcsd_password }} | pcs host auth 192.168.88.125 192.168.88.126 -u hacluster"
   become: yes
   vars: 
     pcsd_password: ntserverp
@@ -41,10 +40,42 @@
     - pacemaker
   become: yes
 
-- name: Setup cluster on host servers
-  shell: pcs cluster setup --name cluster1 192.168.88.125 192.168.88.126
+- name: Setup cluster
+  command: 
+    cmd: "pcs cluster setup cluster1 192.168.88.125 192.168.88.126"
   become: yes
+  when: inventory_hostname == "192.168.88.125"
 
 - name: Start cluster
-  shell: pcs cluster start --all
+  command: 
+    cmd: "pcs cluster start --all"
   become: yes
+
+- name: Enable cluster at boot
+  command:
+    cmd: "pcs cluster enable --all"
+  become: yes
+
+- name: Create VM resources and basic failover setup
+  block:
+    - name: create VM resources
+      shell:
+        cmd: "pcs resource create {{ item }} ocf:heartbeat:VirtualDomain hypervisor='qemu:///system' op start timeout=60s op stop timeout=300s op monitor interval=30s"
+      loop:
+        - VM1
+        - VM2
+        - VM3
+        - VM4
+      become: yes
+
+    - name: Basic VM failover preference
+      shell: 
+        cmd: "pcs constrain location {{ item.name }} prefers {{ item.host }}=INFINITY"
+      loop:
+        - { name: 'VM1', host: '192.168.88.125' }
+        - { name: 'VM2', host: '192.168.88.126' }
+        - { name: 'VM3', host: '192.168.88.125' }
+        - { name: 'VM4', host: '192.168.88.126' }
+      become: yes
+  when: inventory_hostname == "192.168.88.125"
+

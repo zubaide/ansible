@@ -24,26 +24,6 @@
         name: '*'
         state: latest
 
-    - name: create itadmin user
-      tags: always
-      user:
-        name: itadmin
-        group: root
-
-    - name: add ssh key for itadmin
-      tags: always
-      authorized_key:
-        user: itadmin
-        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKirPfe6hRSs5337eyTY/XIcqh6FlDNhC3LaG3pCH8cQ ansible"
-
-    - name: add sudoers file for itadmin
-      tags: always
-      copy:
-        src: sudoer_itadmin
-        dest: /etc/sudoers.d/itadmin
-        owner: root
-        group: root
-
     - name: Install EPEL repository
       tags: epel-repo
       dnf: 

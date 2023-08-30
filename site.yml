@@ -40,3 +40,8 @@
         state: started
         enabled: yes 
 
+- name: Run corosync and Pacemaker on host servers
+  hosts: host_servers
+  roles:
+    - corosync-pacemaker
+

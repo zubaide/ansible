@@ -8,6 +8,7 @@
       - pcs
       - fence-agents-all
     state: present
+    enablerepo: highavailability
   become: yes    
 
 - name: start and enable pcsd service
@@ -24,11 +25,11 @@
   vars: 
     pcsd_password: ntserverp
 
-- name: Generate Corosync Authentication Key
-  command: 
-    cmd: corosync-keygen
-    creates: /etc/corosync/authkey
-  become: yes
+#- name: Generate Corosync Authentication Key
+#  command: 
+#    cmd: corosync-keygen
+#    creates: /etc/corosync/authkey
+#  become: yes
 
 - name: Ensure corosync user exists
   user: 
@@ -36,21 +37,22 @@
     system: yes
   become: yes
 
-- name: Set permission for Corosync Authentication Key
-  file: 
-    path: /etc/corosync/authkey
-    owner: corosync
-    group: corosync
-    mode: '0400'
-  become: yes
+#- name: Set permission for Corosync Authentication Key
+#  file: 
+#    path: /etc/corosync/authkey
+#    owner: corosync
+#    group: corosync
+#    mode: '0400'
+#  become: yes
 
-- name: Copy authkey to another host
-  synchronize:
-    src: /etc/corosync/authkey
-    dest: /etc/corosync/authkey
-  become: yes
-  delegate_to: 192.168.88.126
-  when: inventory_hostname == "192.168.88.125"
+#- name: Copy authkey to another host
+#  synchronize:
+#    src: /etc/corosync/authkey
+#    dest: /etc/corosync/authkey
+#  become: yes
+#  delegate_to: 192.168.88.126
+#  when: inventory_hostname == "192.168.88.125"
+#  run_once: true
 
 - name: Copy Corosync configuration
   copy:

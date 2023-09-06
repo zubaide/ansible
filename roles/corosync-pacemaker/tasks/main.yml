@@ -2,15 +2,15 @@
 
 - name: Install necessary package
   dnf:
-    name: 
-      - pacemaker
-      - corosync
-      - pcs
-      - fence-agents-all
+    name:
+      - pacemaker-2.1.6-9.el9.x86_64
+      - corosync-3.1.7-1.el9.x86_64
+      - pcs-0.11.6-3.el9.x86_64
+      - fence-agents-all-4.10.0-55.el9.x86_64
     state: present
     enablerepo: highavailability
-  become: yes    
-
+  become: yes
+  
 - name: start and enable pcsd service
   service:
     name: pcsd
@@ -18,48 +18,49 @@
     enabled: yes
   become: yes
 
-- name: Setup authentication for pcsd
-  command:  
-    cmd: "echo {{ pcsd_password }} | pcs host auth 192.168.88.125 192.168.88.126 -u hacluster"
+- name: Add firewall rules for cluster communication
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    state: enabled
+  loop:
+    - 2224/tcp
+    - 3121/tcp
+    - 21064/tcp
   become: yes
-  vars: 
-    pcsd_password: ntserverp
 
-#- name: Generate Corosync Authentication Key
-#  command: 
-#    cmd: corosync-keygen
-#    creates: /etc/corosync/authkey
-#  become: yes
+- name: Reload firewalld
+  command:
+    cmd: firewall-cmd --reload
+  become: yes
+
+
+- name: Setup authentication for pcsd
+  command:
+    cmd: "echo {{ pcsd_password }} | pcs host auth {{ cluster_nodes }} -u hacluster"
+  become: yes
+  vars:
+    pcsd_password: ntserverp
+    cluster_nodes:
+      - 192.168.88.125
+      - 192.168.88.126
+      - 192.168.88.112
+      - 192.168.88.113
+      - 192.168.88.114
+      - 192.168.88.115
 
 - name: Ensure corosync user exists
-  user: 
+  user:
     name: corosync
     system: yes
   become: yes
-
-#- name: Set permission for Corosync Authentication Key
-#  file: 
-#    path: /etc/corosync/authkey
-#    owner: corosync
-#    group: corosync
-#    mode: '0400'
-#  become: yes
-
-#- name: Copy authkey to another host
-#  synchronize:
-#    src: /etc/corosync/authkey
-#    dest: /etc/corosync/authkey
-#  become: yes
-#  delegate_to: 192.168.88.126
-#  when: inventory_hostname == "192.168.88.125"
-#  run_once: true
-
+     
 - name: Copy Corosync configuration
   copy:
     src: corosync.conf
     dest: /etc/corosync/corosync.conf
   become: yes
-
+ 
 - name: Start and Enable Corosync and Pacemaker
   service:
     name: "{{ item }}"
@@ -68,44 +69,27 @@
   loop:
     - corosync
     - pacemaker
+
+- name: Check if cluster is already set up
+  command: pcs status xml
+  register: cluster_status
+  failed_when: false
+  changed_when: false
   become: yes
 
 - name: Setup cluster
-  command: 
-    cmd: "pcs cluster setup cluster1 192.168.88.125 192.168.88.126"
-  become: yes
+  command:
+    cmd: "pcs cluster setup cluster1 {{ cluster_nodes | join(' ') }}"
   when: inventory_hostname == "192.168.88.125"
+  become: yes
 
 - name: Start cluster
-  command: 
+  command:
     cmd: "pcs cluster start --all"
   become: yes
-
+ 
 - name: Enable cluster at boot
   command:
     cmd: "pcs cluster enable --all"
   become: yes
-
-- name: Create VM resources and basic failover setup
-  block:
-    - name: create VM resources
-      shell:
-        cmd: "pcs resource create {{ item }} ocf:heartbeat:VirtualDomain hypervisor='qemu:///system' op start timeout=60s op stop timeout=300s op monitor interval=30s"
-      loop:
-        - VM1
-        - VM2
-        - VM3
-        - VM4
-      become: yes
-
-    - name: Basic VM failover preference
-      shell: 
-        cmd: "pcs constrain location {{ item.name }} prefers {{ item.host }}=INFINITY"
-      loop:
-        - { name: 'VM1', host: '192.168.88.125' }
-        - { name: 'VM2', host: '192.168.88.126' }
-        - { name: 'VM3', host: '192.168.88.125' }
-        - { name: 'VM4', host: '192.168.88.126' }
-      become: yes
-  when: inventory_hostname == "192.168.88.125"
 

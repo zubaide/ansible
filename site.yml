@@ -4,11 +4,11 @@
   become: true
   pre_tasks: 
 
-    - name: update DNF cache
-      tags: always
-      dnf:
-        update_cache: yes
-      changed_when: false
+#    - name: update DNF cache
+#      tags: always
+#      dnf:
+#        update_cache: yes
+#      changed_when: false
 
     - name: install update
       tags: always
@@ -41,7 +41,7 @@
         enabled: yes 
 
 - name: Run corosync and Pacemaker on host servers
-  hosts: host_servers
+  hosts: highavailability
   roles:
     - corosync-pacemaker
 

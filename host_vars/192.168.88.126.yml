@@ -2,12 +2,12 @@
 #disk_path: /media/img/vm4.qcow2  # Add the VM image name
 #iso_path: /media/iso/ubuntu-22.04.3-desktop-amd64.iso  # Add the ISO name
 #iso_url: https://ubuntu.com/download/desktop/thank-you?version=22.04.3&architecture=amd64
-disk_path: /media/img/vm4.qcow2
-iso_path: /media/iso/CentOS-Stream-9-latest-x86_64-dvd1.iso  # Add the ISO name
-iso_url: https://mirrors.centos.org/mirrorlist?path=/9-stream/BaseOS/x86_64/iso/CentOS-Stream-9-latest-x86_64-dvd1.iso&redirect=1&protocol=https
+disk_path: /media/img/vm2.qcow2
+iso_path: /media/iso/CentOS-Stream-8-20230911.0-x86_64-dvd1.iso
+iso_url: http://mirror.centos.org/centos/8-stream/HighAvailability/x86_64/os/Packages/pacemaker-2.1.5-8.el8.x86_64.rpm
 
 # VM details
-vm_name: VM4
+vm_name: VM2
 memory: 2048  # RAM in MB
 vcpus: 2  # Number of virtual CPUs
 network: br0

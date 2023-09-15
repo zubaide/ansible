@@ -1,6 +1,6 @@
 ---
 - name: VM Creation and Display Playbook
-  hosts: all
+  hosts: host_servers
   become: yes
 
   roles:

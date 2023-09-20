@@ -52,3 +52,13 @@
 192.168.88.113
 192.168.88.114
 192.168.88.115
+
+[cluster1]
+node1 ansible_host=192.168.88.125
+node2 ansible_host=192.168.88.126
+
+[cluster2]
+node3 ansible_host=192.168.88.112
+node4 ansible_host=192.168.88.113
+node5 ansible_host=192.168.88.114
+node6 ansible_host=192.168.88.115

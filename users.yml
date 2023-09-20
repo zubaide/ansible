@@ -23,4 +23,5 @@
         dest: /etc/sudoers.d/itadmin
         owner: root
         group: root
+        mode: 0440
 

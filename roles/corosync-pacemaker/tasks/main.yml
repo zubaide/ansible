@@ -1,16 +1,28 @@
 ---
 
-- name: Install necessary package
+- name: Install packages for CentOS Stream 8
+  dnf: 
+    name:
+      - pacemaker
+      - corosync
+      - pcs
+      - clufter-lib-pcs
+      - fence-agents-all
+    enablerepo: ha 
+    state: present
+  when: ansible_distribution == 'CentOS' and ansible_distribution_major_version == '8'
+
+- name: Install packages for Rocky Linux
   dnf:
     name:
-      - pacemaker-2.1.6-9.el9.x86_64
-      - corosync-3.1.7-1.el9.x86_64
-      - pcs-0.11.6-3.el9.x86_64
-      - fence-agents-all-4.10.0-55.el9.x86_64
+      - pacemaker
+      - corosync
+      - pcs
+      - fence-agents-all
     state: present
-    enablerepo: highavailability
-  become: yes
-  
+  when: ansible_distribution == 'Rocky' and ansible_distribution_major_version == '9'
+
+
 - name: start and enable pcsd service
   service:
     name: pcsd
@@ -55,10 +67,18 @@
     system: yes
   become: yes
      
-- name: Copy Corosync configuration
+- name: Copy Corosync configuration for cluster1
   copy:
-    src: corosync.conf
+    src: cluster1.conf
     dest: /etc/corosync/corosync.conf
+  when: inventory_hostname in ['node1', 'node2']
+  become: yes
+
+- name: Copy Corosync configuration for cluster2
+  copy:
+    src: cluster2.conf
+    dest: /etc/corosync/corosync.conf
+  when: inventory_hostname in ['node3', 'node4', 'node5', 'node6'] 
   become: yes
  
 - name: Start and Enable Corosync and Pacemaker
@@ -77,11 +97,27 @@
   changed_when: false
   become: yes
 
-- name: Setup cluster
+- name: Setup cluster1
   command:
     cmd: "pcs cluster setup cluster1 {{ cluster_nodes | join(' ') }}"
-  when: inventory_hostname == "192.168.88.125"
+  when: inventory_hostname == "node1"
   become: yes
+  vars: 
+    cluster1_nodes:
+      - 192.168.88.125
+      - 192.168.88.126
+
+- name: Setup cluster2
+  command: 
+    cmd: "pcs cluster setup cluster2 {{ cluster2_nodes | join('') }}"
+  when: inventory_hostname == "node3"
+  become: yes
+  vars: 
+    cluster2_nodes: 
+      - 192.168.88.112
+      - 192.168.88.113
+      - 192.168.88.114
+      - 192.168.88.115
 
 - name: Start cluster
   command:

@@ -42,6 +42,7 @@
 
 - name: Run corosync and Pacemaker on host servers
   hosts: highavailability
+  become: yes
   roles:
     - corosync-pacemaker
 

@@ -47,19 +47,19 @@
   become: yes
 
 
-- name: Setup authentication for pcsd
-  command:
-    cmd: "echo {{ pcsd_password }} | pcs host auth {{ cluster_nodes }} -u hacluster"
-  become: yes
-  vars:
-    pcsd_password: ntserverp
-    cluster_nodes:
-      - 192.168.88.125
-      - 192.168.88.126
-      - 192.168.88.112
-      - 192.168.88.113
-      - 192.168.88.114
-      - 192.168.88.115
+#- name: Setup authentication for pcsd
+#  command:
+#    cmd: "echo {{ pcsd_password }} | pcs host auth {{ cluster_nodes }} -u hacluster"
+#  become: yes
+#  vars:
+#    pcsd_password: ntserverp
+#    cluster_nodes:
+#      - 192.168.88.125
+#      - 192.168.88.126
+#      - 192.168.88.112
+#      - 192.168.88.113
+#      - 192.168.88.114
+#      - 192.168.88.115
 
 - name: Ensure corosync user exists
   user:
@@ -71,14 +71,14 @@
   copy:
     src: cluster1.conf
     dest: /etc/corosync/corosync.conf
-  when: inventory_hostname in ['node1', 'node2']
+  when: inventory_hostname in ['192.168.88.125', '192.168.88.126']
   become: yes
 
 - name: Copy Corosync configuration for cluster2
   copy:
     src: cluster2.conf
     dest: /etc/corosync/corosync.conf
-  when: inventory_hostname in ['node3', 'node4', 'node5', 'node6'] 
+  when: inventory_hostname in ['192.168.88.112', '192.168.88.113', '192.168.88.114', '192.168.88.115'] 
   become: yes
  
 - name: Start and Enable Corosync and Pacemaker
@@ -99,8 +99,8 @@
 
 - name: Setup cluster1
   command:
-    cmd: "pcs cluster setup cluster1 {{ cluster_nodes | join(' ') }}"
-  when: inventory_hostname == "node1"
+    cmd: "pcs cluster setup cluster1 {{ cluster1_nodes | join(' ') }}"
+  when: inventory_hostname == "192.168.88.125"
   become: yes
   vars: 
     cluster1_nodes:
@@ -109,8 +109,8 @@
 
 - name: Setup cluster2
   command: 
-    cmd: "pcs cluster setup cluster2 {{ cluster2_nodes | join('') }}"
-  when: inventory_hostname == "node3"
+    cmd: "pcs cluster setup cluster2 {{ cluster2_nodes | join(' ') }}"
+  when: inventory_hostname == "192.168.88.112"
   become: yes
   vars: 
     cluster2_nodes: 

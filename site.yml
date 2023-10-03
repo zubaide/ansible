@@ -4,11 +4,11 @@
   become: true
   pre_tasks: 
 
-#    - name: update DNF cache
-#      tags: always
-#      dnf:
-#        update_cache: yes
-#      changed_when: false
+    #    - name: update DNF cache
+    # tags: always
+    # dnf:
+    #   update_cache: yes
+    # changed_when: false
 
     - name: install update
       tags: always
@@ -16,29 +16,11 @@
         name: '*'
         state: latest
 
-- name: Install and configure KVM with Bridge on server1 & server2
-  hosts: server1:server2
-  become: true
-  tasks:
-
-    - name: install KVM and related package
-      tags: kvm,libvirtd,qemu
-      dnf: 
-        name:
-          - qemu-kvm
-          - libvirt
-          - virt-install
-          - bridge-utils
-          - virt-manager
-          - virt-viewer
-        state: present
-
-    - name: Enable and start libvirtd service
-      tags: kvm,libvirtd,qemu
-      systemd:
-        name: libvirtd
-        state: started
-        enabled: yes 
+- name: Setting up Host Servers
+  hosts: host_servers
+  become: yes
+  roles: 
+    - host_servers
 
 - name: Run corosync and Pacemaker on host servers
   hosts: highavailability
@@ -46,3 +28,8 @@
   roles:
     - corosync-pacemaker
 
+- name: Install ZFS
+  hosts: shared_storage
+  become: yes
+  roles: 
+    - shared-storage

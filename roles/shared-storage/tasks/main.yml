@@ -1,0 +1,78 @@
+---
+    
+- name: Install EPEL release
+  dnf:
+    name: epel-release
+    state: present
+
+      #- name: Install ZFS release package
+      #  dnf:
+      #    name: 'https://zfsonlinux.org/epel/zfs-release-2-2.el9.noarch.rpm'
+      #    state: present
+
+- name: Enable ZFS repository
+  command: dnf config-manager --enable zfs
+
+- name: Install Development Tools
+  dnf:
+    name: '@Development Tools'
+    state: present
+
+- name: Install kernel-devel
+  dnf:
+    name: kernel-devel
+    state: present
+
+- name: Install zfs-dkms
+  dnf:
+    name: zfs-dkms
+    state: present
+
+- name: Disable ZFS repository
+  command: dnf config-manager --disable zfs
+
+- name: Enable zfs-kmod repository
+  command: dnf config-manager --enable zfs-kmod
+
+- name: Install ZFS
+  dnf:
+    name: zfs
+    state: present
+
+- name: Load ZFS module
+  modprobe:
+    name: zfs
+    state: present
+
+- name: Ensure ZFS module is loaded automatically at boot
+  copy:
+    content: "zfs\n"
+    dest: /etc/modules-load.d/zfs.conf
+    owner: root
+    group: root
+    mode: '0644' 
+
+- name: Get ZFS version
+  command: zfs --version
+  register: zfs_version
+  changed_when: false
+
+- name: Display ZFS version
+  debug:
+    msg: "ZFS version: {{ zfs_version.stdout }}"
+
+- name: Get ZFS pool status
+  command: zpool status
+  register: zfs_pool_status
+  changed_when: false
+  ignore_errors: yes
+
+- name: Display ZFS pool status
+  debug:
+    msg: "{{ zfs_pool_status.stdout }}"
+  when: zfs_pool_status.rc == 0
+
+- name: Display message if no ZFS pools are available
+  debug:
+    msg: "No ZFS pools are available."
+  when: zfs_pool_status.rc != 0

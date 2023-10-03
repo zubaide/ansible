@@ -1,0 +1,79 @@
+---
+ 
+- name: Install KVM and related package
+  dnf:
+    name:
+      - qemu-kvm
+      - libvirt
+      - virt-install
+      - bridge-utils
+      - virt-manager
+      - virt-viewer
+    state: present
+
+- name: Enable and start libvirtd service
+  systemd:
+    name: libvirtd
+    state: started
+    enabled: yes
+
+- name: Debug disk_path
+  debug:
+    var: disk_path
+
+
+- name: Check if VM disk image exists
+  stat: 
+    path: "{{ disk_path }}"
+  register: disk_image
+
+- name: Create VM Disk Image
+  command: "qemu-img create -f qcow2 {{ disk_path }} 20G"
+  when: not disk_image.stat.exists
+
+- name: Check if VM ISO exists
+  stat: 
+    path: "{{ iso_path }}"
+  register: os_iso
+
+- name: Download OS ISO
+  get_url: 
+    url: "{{ iso_url }}"
+    dest: "{{ iso_path }}"
+    mode: '0755'
+  when: not os_iso.stat.exists
+ 
+- name: Check if VM already exists
+  command: "virsh list --all | grep {{ vm_name }}"
+  register: vm_exists
+  failed_when: false
+  changed_when: false
+
+- name: Check if VM disk image is associated with specified VM
+  command: "virsh domblklist --domain {{ vm_name }}"
+  register: disk_association_specific
+  failed_when: false
+  changed_when: false
+
+- name: Check if VM disk image is associated with any VM
+  command: "virsh domblklist --all | grep {{ disk_path }}"
+  register: disk_association_general
+  failed_when: false
+  changed_when: false
+
+- name: Create VM
+  command: >
+    virt-install --name {{ vm_name }} --ram {{ memory }} --vcpu {{ vcpu }}
+    --disk path={{ disk_path }} --cdrom {{ iso_path }}
+    --network bridge={{ network }} --graphic vnc,listen=0.0.0.0
+    --os-variant generic --noautoconsole
+  when: vm_exists.rc != 0 and disk_association_specific.rc != 0 and disk_association_general.rc != 0
+
+- name: List all VMs
+  command: virsh list --all
+  register: vm_list
+  changed_when: false
+
+- name: Display VM list
+  debug:
+    var: vm_list.stdout_lines

@@ -29,6 +29,7 @@
     state: started
     enabled: yes
   become: yes
+  changed_when: false
 
 - name: Add firewall rules for cluster communication
   firewalld:
@@ -45,42 +46,16 @@
   command:
     cmd: firewall-cmd --reload
   become: yes
+  changed_when: false
 
-
-#- name: Setup authentication for pcsd
-#  command:
-#    cmd: "echo {{ pcsd_password }} | pcs host auth {{ cluster_nodes }} -u hacluster"
-#  become: yes
-#  vars:
-#    pcsd_password: ntserverp
-#    cluster_nodes:
-#      - 192.168.88.125
-#      - 192.168.88.126
-#      - 192.168.88.112
-#      - 192.168.88.113
-#      - 192.168.88.114
-#      - 192.168.88.115
 
 - name: Ensure corosync user exists
   user:
     name: corosync
     system: yes
   become: yes
+  changed_when: false
      
-- name: Copy Corosync configuration for cluster1
-  copy:
-    src: cluster1.conf
-    dest: /etc/corosync/corosync.conf
-  when: inventory_hostname in ['192.168.88.125', '192.168.88.126']
-  become: yes
-
-- name: Copy Corosync configuration for cluster2
-  copy:
-    src: cluster2.conf
-    dest: /etc/corosync/corosync.conf
-  when: inventory_hostname in ['192.168.88.112', '192.168.88.113', '192.168.88.114', '192.168.88.115'] 
-  become: yes
- 
 - name: Start and Enable Corosync and Pacemaker
   service:
     name: "{{ item }}"
@@ -89,6 +64,7 @@
   loop:
     - corosync
     - pacemaker
+  changed_when: false
 
 - name: Check if cluster is already set up
   command: pcs status xml
@@ -97,35 +73,18 @@
   changed_when: false
   become: yes
 
-- name: Setup cluster1
-  command:
-    cmd: "pcs cluster setup cluster1 {{ cluster1_nodes | join(' ') }}"
-  when: inventory_hostname == "192.168.88.125"
-  become: yes
-  vars: 
-    cluster1_nodes:
-      - 192.168.88.125
-      - 192.168.88.126
-
-- name: Setup cluster2
-  command: 
-    cmd: "pcs cluster setup cluster2 {{ cluster2_nodes | join(' ') }}"
-  when: inventory_hostname == "192.168.88.112"
-  become: yes
-  vars: 
-    cluster2_nodes: 
-      - 192.168.88.112
-      - 192.168.88.113
-      - 192.168.88.114
-      - 192.168.88.115
-
-- name: Start cluster
-  command:
-    cmd: "pcs cluster start --all"
-  become: yes
- 
 - name: Enable cluster at boot
   command:
     cmd: "pcs cluster enable --all"
   become: yes
+  changed_when: false
 
+- name: Print PCS Status for cluster1 and cluster2
+  command: 
+    cmd: pcs status
+  delegate_to: "{{ item }}"
+  with_items:
+    - 192.168.88.125
+    - 192.168.88.112
+  become: yes
+  changed_when: false
